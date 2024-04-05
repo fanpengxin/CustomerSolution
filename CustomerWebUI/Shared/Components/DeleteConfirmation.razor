@@ -1,0 +1,37 @@
+﻿@if (ShowDialog)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal fade show" style="display:block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" @onclick="Hide" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>@BodyContent</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="Hide" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" @onclick="Confirm" class="btn btn-danger">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@code {
+    [Parameter]
+    public EventCallback<CustomerViewModel> OnDeleteConfirmed { get; set; }
+
+    private bool ShowDialog = false;
+    public string? BodyContent { get; set; }
+    public CustomerViewModel? CustomerToDelete { get; set; }
+
+    public void Display() => ShowDialog = true;
+    public void Hide() => ShowDialog = false;
+
+    private async Task Confirm()
+    {
+        await OnDeleteConfirmed.InvokeAsync(CustomerToDelete);
+    }
+}

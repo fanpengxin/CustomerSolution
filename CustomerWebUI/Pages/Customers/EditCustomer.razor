@@ -1,0 +1,83 @@
+﻿@page "/customers/edit/{customerId:int}"
+
+@inject HttpClient httpClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Coustomer</PageTitle>
+<h3>Edit Customer</h3>
+
+@if (Customer is null && !IsBusy)
+{
+    <div class="alert alert-danger">Customer with Id @CustomerId was not found.</div>
+}
+else
+{
+    <CustomerForm Customer="@Customer" IsBusy="@IsBusy" IsEdit="true" 
+        OnSubmit="@HandleSubmit"
+        OnCancel="@NavigateToOverviewPage" />
+}
+@if (ErrorMessage is not null)
+{
+    <br />
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+@if (IsBusy)
+{
+    <div class="spinner-container">
+        <Chase />
+    </div>
+}
+@code {
+    [Parameter]
+    public int CustomerId { get; set; }
+
+    private CustomerViewModel? Customer { get; set; }
+    private bool IsBusy { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        IsBusy = true;
+
+        try
+        {
+            Customer = await httpClient.GetFromJsonAsync<CustomerViewModel>($"/api/Customer/{CustomerId}");
+        }
+        catch (Exception ex)
+        {            
+            ErrorMessage = $"Error while loading customer: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+    private async Task HandleSubmit(bool isValid)
+    {
+        if (Customer is null || IsBusy || !isValid)
+        {
+            ErrorMessage = null;
+            return;
+        }
+
+        IsBusy = true;
+
+        try
+        {
+            await httpClient.PutAsJsonAsync<CustomerViewModel>("/api/Customer", Customer);  
+            NavigateToOverviewPage();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error while updating customer: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+    private void NavigateToOverviewPage()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}

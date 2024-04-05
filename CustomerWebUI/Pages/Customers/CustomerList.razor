@@ -1,0 +1,117 @@
+﻿@page "/"
+@inject HttpClient httpClient
+
+<h3>Customer List</h3>
+
+<div class="row">
+    <div class="col-12 mt-4">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <td>Name</td>
+                        <td>Age</td>
+                        <td>Postcode</td>
+                        <td>Height</td>
+                        <td></td>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (customers != null && customers.Count != 0)
+                    {
+                        foreach (var customer in customers)
+                        {
+                            <tr>
+                                <td>@customer.Name</td>
+                                <td>@customer.Age</td>
+                                <td>@customer.Postcode</td>
+                                <td>@customer.Height</td>
+                                <td class="btn-group-sm">
+                                    <a href="/customers/edit/@customer.Id" class="btn btn-outline-primary">Edit</a>
+                                    <a @onclick="()=>RequestDeleteCustomer(customer)" class="btn btn-outline-danger">Delete</a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        @if (!IsBusy)
+                        {
+                            <tr>
+                                <td class="text-center" colspan="5">No customer to display</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<DeleteConfirmation @ref="_deleteConfirmation" OnDeleteConfirmed="@OnDeleteConfirmed" />
+@if (ErrorMessage is not null)
+{
+    <br />
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+@if (IsBusy)
+{
+    <div class="spinner-container">
+        <Chase />
+    </div>
+}
+
+@code {
+    private bool IsBusy { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    private DeleteConfirmation _deleteConfirmation = new();
+    private List<CustomerViewModel>? customers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await FetchCustomerList();
+    }
+
+    private async Task FetchCustomerList()
+    {
+        IsBusy = true;
+        try
+        {
+            customers = await httpClient.GetFromJsonAsync<List<CustomerViewModel>>("/api/Customer");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error while loading customer: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+    private void RequestDeleteCustomer(CustomerViewModel customer)
+    {
+        _deleteConfirmation.BodyContent = $"Do you wish to delete customer ({customer.Name}) from the list?";
+        _deleteConfirmation.CustomerToDelete = customer;
+        _deleteConfirmation.Display();
+    }
+
+    private async Task OnDeleteConfirmed(CustomerViewModel customer)
+    {
+        IsBusy = true;
+        try
+        {
+            var result = await httpClient.DeleteAsync($"/api/Customer/{customer.Id}");
+            _deleteConfirmation.Hide();
+            await FetchCustomerList();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error while loading customer: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+}

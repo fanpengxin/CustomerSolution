@@ -1,0 +1,87 @@
+﻿@inject ILogger<CustomerForm> _logger
+
+@if (Customer is not null)
+{
+    <EditForm Model="@Customer" OnValidSubmit="@SaveCustomer"
+              OnInvalidSubmit="@HandleInvalidSubmit">
+        <DataAnnotationsValidator />
+        @* <ValidationSummary /> *@
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <InputText id="name" class="form-control"
+                       @bind-Value="Customer.Name" />
+            <ValidationMessage For="()=>Customer.Name" />
+        </div>
+        <div class="mb-3">
+            <label for="age" class="form-label">Age</label>
+            <InputNumber id="age" class="form-control"
+                         @bind-Value="Customer.Age" />
+            <ValidationMessage For="()=>Customer.Age" />
+        </div>
+        <div class="mb-3">
+            <label for="postcode" class="form-label">Postcode</label>
+            <InputText id="postcode" class="form-control"
+                       @bind-Value="Customer.Postcode" />
+            <ValidationMessage For="()=>Customer.Postcode" />
+        </div>
+        <div class="mb-3">
+            <label for="height" class="form-label">Height</label>
+            <InputNumber id="height" class="form-control"
+                         @bind-Value="Customer.Height" @bind-Value:format="F2" />
+            <ValidationMessage For="()=>Customer.Height" />
+        </div>
+
+        @if (IsEdit)
+        {
+            <button type="submit" class="btn btn-primary" disabled="@(!context.Validate())">Update</button>
+            <button type="button" class="btn btn-secondary"
+                    @onclick="HandleCancel" disabled="@IsBusy">
+                Cancel
+            </button>
+        }
+        else
+        {
+            <button type="submit" class="btn btn-primary" disabled="@(!context.IsModified() || !context.Validate())">Add</button>
+        }
+    </EditForm>
+}
+@if (IsBusy)
+{
+    <div class="spinner-container">
+        <Chase />
+    </div>
+}
+@code {
+    [Parameter]
+    public CustomerViewModel? Customer { get; set; }
+    [Parameter]
+    public bool IsBusy { get; set; }
+    [Parameter]
+    public bool IsEdit { get; set; }
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+    [Parameter]
+    public EventCallback<bool> OnSubmit { get; set; }
+
+    private async Task SaveCustomer()
+    {
+        if (OnSubmit.HasDelegate)
+        {
+            await OnSubmit.InvokeAsync(true);
+        }
+    }
+    private async Task HandleInvalidSubmit()
+    {
+        if (OnSubmit.HasDelegate)
+        {
+            await OnSubmit.InvokeAsync(false);
+        }
+    }
+    private async Task HandleCancel()
+    {
+        if (OnCancel.HasDelegate)
+        {
+            await OnCancel.InvokeAsync();
+        }
+    }
+}

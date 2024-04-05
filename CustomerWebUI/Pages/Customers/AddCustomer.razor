@@ -1,0 +1,78 @@
+﻿@page "/customers/add"
+
+@inject HttpClient httpClient
+
+<PageTitle>Add Customer</PageTitle>
+<h3>Add Customer</h3>
+
+<CustomerForm Customer="@Customer" IsBusy="@IsBusy" OnSubmit="@HandleSubmit" />
+@if (SuccessMessage is not null)
+{
+    <br />
+    <div class="alert alert-success">@SuccessMessage</div>
+}
+
+@if (ErrorMessage is not null)
+{
+    <br />
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+@if (IsBusy)
+{
+    <div class="spinner-container">
+        <Chase />
+    </div>
+}
+@code {
+    private CustomerViewModel? Customer { get; set; }
+    private bool IsBusy { get; set; }
+    private string? SuccessMessage { get; set; }
+    private string? ErrorMessage { get; set; }  
+
+    protected override void OnInitialized()
+    {
+        Customer = new();
+    }
+
+    private async Task HandleSubmit(bool isValid)
+    {
+        if(isValid){
+            await SaveCustomer();
+        }else{
+            HandleInvalidSubmit();
+        }
+    }
+
+    private async Task SaveCustomer()
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+        IsBusy = true;
+        try
+        {
+            if (Customer is not null)
+            {
+                var newCustomer = await httpClient.PostAsJsonAsync<CustomerViewModel>("/api/Customer", Customer);
+                Customer = new CustomerViewModel();
+                SuccessMessage = $"Customer {Customer.Name} was added successfully.";
+                ErrorMessage = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            SuccessMessage = null;
+            ErrorMessage = $"Error while add cusomter : {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+    private void HandleInvalidSubmit()
+    {
+        SuccessMessage = null;
+        ErrorMessage = null;
+    }
+}
